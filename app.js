@@ -4,6 +4,8 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
+require('dotenv').config()
+
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const campsiteRouter = require('./routes/campsiteRouter')
@@ -12,7 +14,7 @@ const partnerRouter = require('./routes/partnerRouter')
 
 const mongoose = require('mongoose')
 
-const url = 'mongodb://localhost:27017/nucampsite'
+const url = `${process.env.DB}://${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`
 const connect = mongoose.connect(url, {
   useCreateIndex: true,
   useFindAndModify: false,
@@ -36,28 +38,38 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser(process.env.SC_KEY));
 
 function auth(req, res, next) {
-  console.log(req.headers)
-  const authHeader = req.headers.authorization
-  if (!authHeader) {
-    const err = new Error('You are not authenticated!')
-    res.setHeader('WWW-Authenticate', 'Basic')
-    err.status = 401
-    return next(err)
-  }
+  if (!req.signedCookies.user) {
+    const authHeader = req.headers.authorization
+    if (!authHeader) {
+      const err = new Error('You are not authenticated!')
+      res.setHeader('WWW-Authenticate', 'Basic')
+      err.status = 401
+      return next(err)
+    }
 
-  const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':')
-  const user = auth[0]
-  const pass = auth[1]
-  if (user === 'admin' && pass === 'password') {
-    return next(); // authorized
+    const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':')
+    const user = auth[0]
+    const pass = auth[1]
+    if (user === 'admin' && pass === 'password') {
+      res.cookie('user', 'admin', {signed: true})
+      return next(); // authorized
+    } else {
+      const err = new Error('You are not authorized!')
+      res.setHeader('WWW-Authenticate', 'Basic')
+      err.status = 401
+      return next(err)
+    }
   } else {
-    const err = new Error('You are not authorized!')
-    res.setHeader('WWW-Authenticate', 'Basic')
-    err.status = 401
-    return next(err)
+    if (req.signedCookies.user === 'admin') {
+      return next();
+    } else {
+      const err = new Error('You are not authorized!')
+      err.status = 401
+      return next(err)
+    }
   }
 }
 
