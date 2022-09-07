@@ -14,7 +14,8 @@ const partnerRouter = require('./routes/partnerRouter')
 
 const mongoose = require('mongoose')
 
-const url = `${process.env.DB}://${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`
+const url = process.env.STATUS === 'dev' ? process.env.DB_DEV  : process.env.DB_PROD
+
 const connect = mongoose.connect(url, {
   useCreateIndex: true,
   useFindAndModify: false,
