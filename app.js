@@ -4,6 +4,8 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
+require('dotenv').config()
+
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const campsiteRouter = require('./routes/campsiteRouter')
@@ -12,7 +14,7 @@ const partnerRouter = require('./routes/partnerRouter')
 
 const mongoose = require('mongoose')
 
-const url = 'mongodb://localhost:27017/nucampsite'
+const url = `${process.env.DB}://${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`
 const connect = mongoose.connect(url, {
   useCreateIndex: true,
   useFindAndModify: false,
@@ -36,7 +38,7 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser('12345-67890-09876-54321'));
+app.use(cookieParser(process.env.SC_KEY));
 
 function auth(req, res, next) {
   if (!req.signedCookies.user) {
