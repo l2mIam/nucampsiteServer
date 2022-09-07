@@ -1,9 +1,10 @@
 const createError = require('http-errors');
 const express = require('express');
 const path = require('path');
-const cookieParser = require('cookie-parser');
+// const cookieParser = require('cookie-parser');
 const logger = require('morgan');
-
+const session = require('express-session')
+const FileStore = require('session-file-store')(session)
 require('dotenv').config()
 
 const indexRouter = require('./routes/index');
@@ -39,10 +40,22 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser(process.env.SC_KEY));
+
+
+// app.use(cookieParser(process.env.SC_KEY));
+app.use(session({
+  name: 'session-id',
+  secret: process.env.SEC_KEY,
+  saveUninitialized: false,
+  resave: false,
+  store: new FileStore()
+}))
 
 function auth(req, res, next) {
-  if (!req.signedCookies.user) {
+  console.log(req.session)
+
+  // if (!req.signedCookies.user) {
+  if (!req.session.user) {
     const authHeader = req.headers.authorization
     if (!authHeader) {
       const err = new Error('You are not authenticated!')
@@ -55,7 +68,8 @@ function auth(req, res, next) {
     const user = auth[0]
     const pass = auth[1]
     if (user === 'admin' && pass === 'password') {
-      res.cookie('user', 'admin', {signed: true})
+      // res.cookie('user', 'admin', {signed: true})
+      req.session.user = 'admin'
       return next(); // authorized
     } else {
       const err = new Error('You are not authorized!')
@@ -64,7 +78,8 @@ function auth(req, res, next) {
       return next(err)
     }
   } else {
-    if (req.signedCookies.user === 'admin') {
+    // if (req.signedCookies.user === 'admin') {
+    if (req.session.user === 'admin') {
       return next();
     } else {
       const err = new Error('You are not authorized!')
