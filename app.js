@@ -5,6 +5,8 @@ const path = require('path');
 const logger = require('morgan');
 const session = require('express-session')
 const FileStore = require('session-file-store')(session)
+const passport = require('passport')
+const authenticate = require('./authenticate')
 require('dotenv').config()
 
 const indexRouter = require('./routes/index');
@@ -13,7 +15,8 @@ const campsiteRouter = require('./routes/campsiteRouter')
 const promotionRouter = require('./routes/promotionRouter')
 const partnerRouter = require('./routes/partnerRouter')
 
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
+const { application } = require('express');
 
 const url = process.env.STATUS === 'dev' ? process.env.DB_DEV  : process.env.DB_PROD
 
@@ -41,7 +44,6 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-
 // app.use(cookieParser(process.env.SC_KEY));
 app.use(session({
   name: 'session-id',
@@ -51,26 +53,21 @@ app.use(session({
   store: new FileStore()
 }))
 
+app.use(passport.initialize())
+app.use(passport.session())
+
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
 function auth(req, res, next) {
-  console.log(req.session)
+  console.log(req.user)
 
-  // if (!req.signedCookies.user) {
-  if (!req.session.user) {
+  if (!req.user) {
     const err = new Error('You are not authenticated!')
     err.status = 401
     return next(err)
   } else {
-    // if (req.signedCookies.user === 'admin') {
-    if (req.session.user === 'authenticated') {
       return next();
-    } else {
-      const err = new Error('You are not authorized!')
-      err.status = 401
-      return next(err)
-    }
   }
 }
 
