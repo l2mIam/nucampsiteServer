@@ -1,6 +1,7 @@
 // import express from 'express'
 const express = require('express')
 const Campsite = require('../models/campsite')
+const authenticate = require('../authenticate')
 
 const campsiteRouter = express.Router()
 
@@ -24,7 +25,7 @@ campsiteRouter.route('/')
     .catch(err => next(err))
     // res.end('Will send all the campsites to you')
 })
-.post((req, res, next) => {
+.post(authenticate.verifyUser, (req, res, next) => {
     // create entry from body of request. Mongoose will check schema, return promise
     Campsite.create(req.body)
     .then(campsite => {
@@ -35,11 +36,11 @@ campsiteRouter.route('/')
     })
     .catch(err => next(err))
 })
-.put((req, res) => {
+.put(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403
     res.end('PUT operation not supported on /campsites')
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     // obviously this is a big NO NO, just doing for demo
     Campsite.deleteMany()
     .then(response => {
@@ -63,11 +64,11 @@ campsiteRouter.route('/:campsiteId')
   })
   .catch(err => next(err))
 })
-.post((req, res) => {
+.post(authenticate.verifyUser, (req, res) => {
   res.statusCode = 403
   res.end(`POST operation not supported on /campsites/${req.params.campsiteId}`)
 })
-.put((req, res, next) => {
+.put(authenticate.verifyUser, (req, res, next) => {
   // params: campsiteId, $set (update operator), object to get updated info from updated document
   Campsite.findByIdAndUpdate(req.params.campsiteId, {
     $set: req.body
@@ -79,7 +80,7 @@ campsiteRouter.route('/:campsiteId')
   })
   .catch(err => next(err))
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
   Campsite.findByIdAndDelete(req.params.campsiteId)
   .then(respond => {
     res.statusCode = 200
@@ -109,7 +110,7 @@ campsiteRouter.route('/:campsiteId/comments')
     })
     .catch(err => next(err))
 })
-.post((req, res, next) => {
+.post(authenticate.verifyUser, (req, res, next) => {
     Campsite.findById(req.params.campsiteId)
     .then(campsite => {
       if (campsite) {
@@ -129,11 +130,11 @@ campsiteRouter.route('/:campsiteId/comments')
     })
     .catch(err => next(err))
 })
-.put((req, res) => {
+.put(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403
     res.end(`PUT operation not supported on /campsites/${req.params.campsiteId}/comments`)
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     // obviously this is a big NO NO, just doing for demo
     Campsite.findById(req.params.campsiteId)
     .then(campsite => {
@@ -183,11 +184,11 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
     })
     .catch(err => next(err))
 })
-.post((req, res) => {
+.post(authenticate.verifyUser, (req, res) => {
           res.statusCode = 403
           res.end(`POST operation not supported on /campsites/${req.params.campsiteId}/comments/${req.params.commentId}`)
 })
-.put((req, res, next) => {
+.put(authenticate.verifyUser, (req, res, next) => {
   Campsite.findById(req.params.campsiteId)
   .then(campsite => {
     if (campsite && campsite.comments.id(req.params.commentId)) {
@@ -217,7 +218,7 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
   })
   .catch(err => next(err))
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Campsite.findById(req.params.campsiteId)
     .then(campsite => {
       if (campsite && campsite.comments.id(req.params.commentId)) {
