@@ -2,6 +2,7 @@ const express = require('express')
 const User = require('../models/user')
 const router = express.Router()
 const passport = require('passport')
+const authenticate = require('../authenticate')
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
@@ -9,6 +10,7 @@ router.get('/', function(req, res, next) {
 })
 
 router.post('/signup', (req, res) => {
+  // passport-local-mongoose static method handles registration
   User.register(
     new User({username: req.body.username}),
     req.body.password,
@@ -29,12 +31,14 @@ router.post('/signup', (req, res) => {
 })
 
 router.post('/login', passport.authenticate('local'), (req, res) => {
+  const token = authenticate.getToken({_id: req.user._id})
   res.statusCode = 200
   res.setHeader('Content-Type', 'application/json')
-  res.json({success: true, status: 'You are successfully logged in!'})
+  res.json({success: true, token: token, status: 'You are successfully logged in!'})
 })
 
 router.get('/logout', (req, res, next) => {
+  // update this
   if (req.session) {
     req.session.destroy()
     res.clearCookie('session-id')
