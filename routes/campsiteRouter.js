@@ -26,8 +26,9 @@ campsiteRouter.route('/')
     .catch(err => next(err))
     // res.end('Will send all the campsites to you')
 })
-.post(authenticate.verifyUser, (req, res, next) => {
+.post(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
     // create entry from body of request. Mongoose will check schema, return promise
+
     Campsite.create(req.body)
     .then(campsite => {
       console.log('Campsite Created ', campsite)
@@ -41,7 +42,7 @@ campsiteRouter.route('/')
     res.statusCode = 403
     res.end('PUT operation not supported on /campsites')
 })
-.delete(authenticate.verifyUser, (req, res, next) => {
+.delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
     // obviously this is a big NO NO, just doing for demo
     Campsite.deleteMany()
     .then(response => {
@@ -70,7 +71,7 @@ campsiteRouter.route('/:campsiteId')
   res.statusCode = 403
   res.end(`POST operation not supported on /campsites/${req.params.campsiteId}`)
 })
-.put(authenticate.verifyUser, (req, res, next) => {
+.put(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
   // params: campsiteId, $set (update operator), object to get updated info from updated document
   Campsite.findByIdAndUpdate(req.params.campsiteId, {
     $set: req.body
@@ -82,7 +83,7 @@ campsiteRouter.route('/:campsiteId')
   })
   .catch(err => next(err))
 })
-.delete(authenticate.verifyUser, (req, res, next) => {
+.delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
   Campsite.findByIdAndDelete(req.params.campsiteId)
   .then(respond => {
     res.statusCode = 200
@@ -138,7 +139,7 @@ campsiteRouter.route('/:campsiteId/comments')
     res.statusCode = 403
     res.end(`PUT operation not supported on /campsites/${req.params.campsiteId}/comments`)
 })
-.delete(authenticate.verifyUser, (req, res, next) => {
+.delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
     // obviously this is a big NO NO, just doing for demo
     Campsite.findById(req.params.campsiteId)
     .then(campsite => {
@@ -196,21 +197,28 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
 .put(authenticate.verifyUser, (req, res, next) => {
   Campsite.findById(req.params.campsiteId)
   .then(campsite => {
+    // check if values exist before updating
     if (campsite && campsite.comments.id(req.params.commentId)) {
-      // check if values exist before updating
-      if (req.body.rating) {
-        campsite.comments.id(req.params.commentId).rating = req.body.rating 
+    // check if user matches the comment author
+      if ((campsite.comments.id(req.params.commentId)).author._id.equals(req.user._id)) {
+        if (req.body.rating) {
+          campsite.comments.id(req.params.commentId).rating = req.body.rating 
+        }
+        if (req.body.text) {
+          campsite.comments.id(req.params.commentId).text = req.body.text
+        }
+        campsite.save()
+        .then(campsite => {
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json')
+          res.json(campsite)
+        })
+        .catch(err => next(err))
+      } else {
+        err = new Error("you are not the author")
+        err.status = 403
+        return next(err)
       }
-      if (req.body.text) {
-        campsite.comments.id(req.params.commentId).text = req.body.text
-      }
-      campsite.save()
-      .then(campsite => {
-        res.statusCode = 200
-        res.setHeader('Content-Type', 'application/json')
-        res.json(campsite)
-      })
-      .catch(err => next(err))
     } else if (!campsite) {
       err = new Error(`Campsite ${req.params.campsiteId} not found`)
       err.status =404
@@ -227,14 +235,21 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
     Campsite.findById(req.params.campsiteId)
     .then(campsite => {
       if (campsite && campsite.comments.id(req.params.commentId)) {
-        campsite.comments.id(req.params.commentId).remove()
-        campsite.save()
-        .then(campsite => {
-          res.statusCode = 200
-          res.setHeader('Content-Type', 'application/json')
-          res.json(campsite)
-        })
-        .catch(err => next(err))
+     // check if user matches the comment author
+        if ((campsite.comments.id(req.params.commentId)).author._id.equals(req.user._id)) {
+          campsite.comments.id(req.params.commentId).remove()
+            campsite.save()
+            .then(campsite => {
+              res.statusCode = 200
+              res.setHeader('Content-Type', 'application/json')
+              res.json(campsite)
+            })
+            .catch(err => next(err))
+        } else {
+          err = new Error("you are not the author")
+          err.status = 403
+          return next(err)
+        }
       } else if (!campsite) {
         err = new Error(`Campsite ${req.params.campsiteId} not found`)
         err.status =404
