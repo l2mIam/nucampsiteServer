@@ -1,3 +1,5 @@
 node_modules
 .env
 sessions
+bin/server.key
+bin/server.cert

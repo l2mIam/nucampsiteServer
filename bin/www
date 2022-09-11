@@ -48,13 +48,13 @@ const secureServer = https.createServer(options, app)
  * Listen on provided port, on all network interfaces.
  */
 
- secureServer.listen(app.get('secPort'), () => {
+secureServer.listen(app.get('secPort'), () => {
   console.log('Server listening on port', app.get('secPort'))
- })
- secureServer.on('error', onError);
- secureServer.on('listening', onListening);
+});
+secureServer.on('error', onError)
+secureServer.on('listening', onListening)
  
- /**
+/**
  * Normalize a port into a number, string, or false.
  */
 
