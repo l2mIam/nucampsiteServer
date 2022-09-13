@@ -4,6 +4,10 @@ const Schema = mongoose.Schema
 
 
 const userSchema = new Schema({
+  facebookId: {
+    type: String,
+    default: ''
+  },
   firstname: {
     type: String,
     default: ''
