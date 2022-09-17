@@ -26,7 +26,9 @@ favoriteRouter.route('/')
   .then(favorites => {
     if (favorites) {
       req.body.forEach(favorite => {
-        if (!favorites.campsites.includes(favorite)) favorites.campsites.push(favorite)
+        if (!favorites.campsites.includes(favorite._id)) {
+          favorites.campsites.push(favorite)
+        }  
       })
       favorites.save()
       .then(favorites => {
